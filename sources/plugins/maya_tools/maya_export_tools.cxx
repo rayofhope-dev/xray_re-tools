@@ -28,6 +28,7 @@
 #include "xr_skl_motion.h"
 #include "xr_envelope.h"
 #include "xr_utils.h"
+#include "xr_obj_motion.h"
 
 using namespace xray_re;
 
@@ -189,7 +190,7 @@ static MStatus extract_uvs(MFnMesh& mesh_fn, lw_face_vec& faces,
 
 		fvector2 uv0;
 		if (!it.getUV(uv0.xy)) {
-			msg("can't extract shared UVs for vert %"PRIu32, vert_idx);
+			msg("can't extract shared UVs for vert %" PRIu32, vert_idx);
 			return MS::kInvalidParameter;
 		}
 		uv0.v = 1.f - uv0.v;
@@ -212,7 +213,7 @@ static MStatus extract_uvs(MFnMesh& mesh_fn, lw_face_vec& faces,
 
 			fvector2 uv;
 			if (!it.getUV(face_idx, uv.xy)) {
-				msg("can't extract UVs for vert %" PRIu32 " face %"PRIu32, vert_idx, face_idx);
+				msg("can't extract UVs for vert %" PRIu32 " face %" PRIu32, vert_idx, face_idx);
 				uv = uv0;
 			}
 			uv.v = 1.f - uv.v;
@@ -771,6 +772,7 @@ MStatus maya_export_tools::export_skl(const char* path, bool selection_only)
 	int32_t frame_start = int32_t(MAnimControl::minTime().as(MTime::kNTSCFrame));
 	int32_t frame_end = int32_t(MAnimControl::maxTime().as(MTime::kNTSCFrame));
 	msg("range=%d - %d", frame_start, frame_end);
+	frame_end+=1;
 
 	for (int32_t frame = frame_start; frame != frame_end; ++frame) {
 		MGlobal::viewFrame(MTime(double(frame), MTime::kNTSCFrame));
@@ -804,5 +806,61 @@ MStatus maya_export_tools::export_skl(const char* path, bool selection_only)
 
 	MAnimControl::setCurrentTime(saved_time);
 
+	return status;
+}
+
+MStatus maya_export_tools::export_anm(const char* path, bool selection_only)
+{
+	if (MTime::uiUnit() != MTime::kNTSCFrame)
+		msg("warning: motion export with non-NTSC frame frequency was not tested");
+
+	MSelectionList selected;
+	MGlobal::getActiveSelectionList(selected);
+	MObject animated_obj;
+
+	if (!selected.length()) return MStatus::kInvalidParameter;
+	MStatus status = selected.getDependNode(0, animated_obj);
+	if (!status) return status;
+	if (!animated_obj.hasFn(MFn::kTransform)) return MStatus::kInvalidParameter;
+
+	xr_obj_motion omotion;
+	omotion.create_envelopes();
+	xr_envelope* const* envelopes = omotion.envelopes();
+
+	MTime saved_time(MAnimControl::currentTime());
+
+	int32_t frame_start = int32_t(MAnimControl::minTime().as(MTime::kNTSCFrame));
+	int32_t frame_end = int32_t(MAnimControl::maxTime().as(MTime::kNTSCFrame));
+	msg("range=%d - %d", frame_start, frame_end);
+	frame_end += 1;
+
+	for (int32_t frame = frame_start; frame != frame_end; ++frame) {
+		MGlobal::viewFrame(MTime(double(frame), MTime::kNTSCFrame));
+		MFnTransform obj_transform(animated_obj);
+		float time = frame / 30.f;
+
+		MVector t = obj_transform.getTranslation(MSpace::kTransform, &status);
+		CHECK_MSTATUS(status);
+		envelopes[0]->insert_key(time, float(MDistance(t.x, MDistance::kCentimeters).asMeters()));
+		envelopes[1]->insert_key(time, float(MDistance(t.y, MDistance::kCentimeters).asMeters()));
+		envelopes[2]->insert_key(time, float(MDistance(-t.z, MDistance::kCentimeters).asMeters()));
+
+		MEulerRotation r;
+		status = obj_transform.getRotation(r);
+		CHECK_MSTATUS(status);
+		r.reorderIt(MEulerRotation::kZXY);
+		envelopes[4]->insert_key(time, float(-r.x));
+		envelopes[3]->insert_key(time, float(-r.y));
+		envelopes[5]->insert_key(time, float(r.z));
+		
+	}
+
+	omotion.name() = "unnamed";
+	omotion.fps() = 30.f;
+	omotion.set_frame_range(frame_start, frame_end);
+
+	status = omotion.save_anm(path) ? MS::kSuccess : MS::kFailure;
+
+	MAnimControl::setCurrentTime(saved_time);
 	return status;
 }

@@ -36,6 +36,7 @@ const MString ogf_reader("X-Ray game object");
 const MString omf_reader("X-Ray game skeletal motions");
 const MString skl_translator("X-Ray skeletal motion");
 const MString skls_reader("X-Ray skeletal motions");
+const MString anm_reader("X-Ray anm motion");
 
 class maya_dm_reader: public MPxFileTranslator {
 public:
@@ -120,6 +121,19 @@ public:
 	static void*		creator();
 };
 
+class maya_anm_translator : public MPxFileTranslator {
+public:
+	//virtual MStatus		reader(const MFileObject& file, const MString& options, FileAccessMode mode);
+	virtual MStatus		writer(const MFileObject& file, const MString& options, FileAccessMode mode);
+	virtual bool		haveReadMethod() const;
+	virtual bool		haveWriteMethod() const;
+	virtual MString		defaultExtension() const;
+	virtual MString		filter() const;
+	virtual MFileKind	identifyFile(const MFileObject& file, const char* buffer, short size) const;
+
+	static void*		creator();
+};
+
 static inline MString extract_extension(const MFileObject& file)
 {
 	MString name(file.resolvedName());
@@ -134,7 +148,8 @@ MStatus maya_dm_reader::reader(const MFileObject& file, const MString& options, 
 	MStatus status = MS::kFailure;
 	if (mode == kImportAccessMode || mode == kOpenAccessMode) {
 		start_progress(2, "Loading DM");
-		const char *path = file.resolvedFullName().asChar();
+		auto name = file.resolvedFullName();
+		const char *path = name.asChar();
 		xr_dm* dm = new xr_dm;
 		if (dm->load_dm(path)) {
 			advance_progress();
@@ -172,7 +187,8 @@ MStatus maya_object_translator::reader(const MFileObject& file, const MString& o
 
 	MStatus status = MS::kFailure;
 	if (mode == kImportAccessMode || mode == kOpenAccessMode) {
-		const char* path = file.resolvedFullName().asChar();
+		auto name = file.resolvedFullName();
+		const char* path = name.asChar();
 		xr_object* object = new xr_object;
 		if (object->load_object(path))
 			maya_import_tools(object, &status);
@@ -195,8 +211,8 @@ MStatus maya_object_translator::writer(const MFileObject& file, const MString& o
 	default:
 		return MS::kFailure;
 	}
-
-	return maya_export_tools().export_object(file.resolvedFullName().asChar(),
+	auto name = file.resolvedFullName();
+	return maya_export_tools().export_object(name.asChar(),
 			mode == kExportActiveAccessMode);
 }
 
@@ -259,7 +275,8 @@ MStatus maya_ogf_reader::reader(const MFileObject& file, const MString& options,
 	MStatus status = MS::kFailure;
 	if (mode == kImportAccessMode || mode == kOpenAccessMode) {
 		start_progress(2, "Loading OGF");
-		const char* path = file.resolvedFullName().asChar();
+		auto name = file.resolvedFullName();
+		const char* path = name.asChar();
 		xr_ogf* ogf = xr_ogf::load_ogf(path);
 		if (ogf) {
 			advance_progress();
@@ -298,7 +315,8 @@ MStatus maya_omf_reader::reader(const MFileObject& file, const MString& options,
 	MStatus status = MS::kFailure;
 	if (mode == kImportAccessMode) {
 		start_progress(1, "Loading OMF");
-		const char* path = file.resolvedFullName().asChar();
+		auto name = file.resolvedFullName();
+		const char* path = name.asChar();
 		xr_ogf_v4* omf = new xr_ogf_v4;
 		if (omf->load_omf(path)) {
 			advance_progress();
@@ -338,7 +356,8 @@ MStatus maya_skl_translator::reader(const MFileObject& file, const MString& opti
 	MStatus status = MS::kFailure;
 	if (mode == kImportAccessMode) {
 		maya_import_tools imp_tools;
-		const char* path = file.resolvedFullName().asChar();
+		auto name = file.resolvedFullName();
+		const char* path = name.asChar();
 		xr_skl_motion* smotion = new xr_skl_motion;
 		if (!smotion->load_skl(path)) {
 			msg("can't open %s", path);
@@ -367,8 +386,8 @@ MStatus maya_skl_translator::writer(const MFileObject& file, const MString& opti
 	default:
 		return MS::kFailure;
 	}
-
-	return maya_export_tools().export_skl(file.resolvedFullName().asChar(),
+	auto name = file.resolvedFullName();
+	return maya_export_tools().export_skl(name.asChar(),
 			mode == kExportActiveAccessMode);
 }
 
@@ -394,7 +413,8 @@ MStatus maya_skls_reader::reader(const MFileObject& file, const MString& options
 	MStatus status = MS::kFailure;
 	if (mode == kImportAccessMode) {
 		maya_import_tools imp_tools;
-		const char* path = file.resolvedFullName().asChar();
+		auto name = file.resolvedFullName();
+		const char* path = name.asChar();
 		xr_object* object = new xr_object;
 		if (!object->load_skls(path)) {
 			msg("can't open %s", path);
@@ -431,6 +451,36 @@ MPxFileTranslator::MFileKind maya_skls_reader::identifyFile(const MFileObject& f
 
 void* maya_skls_reader::creator() { return new maya_skls_reader; }
 
+
+MStatus maya_anm_translator::writer(const MFileObject& file, const MString& options, FileAccessMode mode)
+{
+	fix_fpu_cw();
+
+	switch (mode) {
+	case kExportAccessMode:
+	case kSaveAccessMode:
+	case kExportActiveAccessMode:
+		break;
+	default:
+		return MS::kFailure;
+	}
+	auto name = file.resolvedFullName();
+	return maya_export_tools().export_anm(name.asChar(),
+		mode == kExportActiveAccessMode);
+}
+
+bool maya_anm_translator::haveReadMethod		() const	{	return false; }
+bool maya_anm_translator::haveWriteMethod		() const	{	return true; }
+MString maya_anm_translator::defaultExtension	() const	{	return MString("anm");}
+MString maya_anm_translator::filter				() const	{	return MString("*.anm");}
+
+MPxFileTranslator::MFileKind maya_anm_translator::identifyFile(const MFileObject& file, const char* buffer, short size) const
+{
+	return extract_extension(file) == defaultExtension() ? kIsMyFileType : kNotMyFileType;
+}
+
+void* maya_anm_translator::creator				()			{	return new maya_anm_translator;}
+
 MStatus initializePlugin(MObject obj)
 {
 	MStatus status;
@@ -459,6 +509,8 @@ MStatus initializePlugin(MObject obj)
 	if (!(status = plugin_fn.registerFileTranslator(skl_translator, "", maya_skl_translator::creator, "", "", true)))
 		return status;
 	if (!(status = plugin_fn.registerFileTranslator(skls_reader, "", maya_skls_reader::creator, "", "", true)))
+		return status;
+	if (!(status = plugin_fn.registerFileTranslator(anm_reader, "", maya_anm_translator::creator, "", "", true)))
 		return status;
 
 	return status;
