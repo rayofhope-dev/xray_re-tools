@@ -527,6 +527,7 @@ MStatus uninitializePlugin(MObject obj)
 	plugin_fn.deregisterFileTranslator(omf_reader);
 	plugin_fn.deregisterFileTranslator(skl_translator);
 	plugin_fn.deregisterFileTranslator(skls_reader);
+	plugin_fn.deregisterFileTranslator(anm_reader);
 
 	return MS::kSuccess;
 }
