@@ -633,19 +633,19 @@ static MStatus extract_vertex_normals(MFnMesh& mesh_fn, fvector3_vec& normals)
 	return status;
 }
 
-static MStatus extract_face_normals(MFnMesh& mesh_fn, fvector3_vec& normals)
-{
-	MStatus status = MS::kSuccess;
-
-	for (MItMeshPolygon it(mesh_fn.object()); !it.isDone(); it.next())
-	{
-		MVector maya_normal;
-		status = it.getNormal(maya_normal);
-		CHECK_MSTATUS(status);
-		normals.push_back({ (float)maya_normal.x, (float)maya_normal.y, (float)maya_normal.z });	
-	}
-	return status;
-}
+//static MStatus extract_face_normals(MFnMesh& mesh_fn, fvector3_vec& normals)
+//{
+//	MStatus status = MS::kSuccess;
+//
+//	for (MItMeshPolygon it(mesh_fn.object()); !it.isDone(); it.next())
+//	{
+//		MVector maya_normal;
+//		status = it.getNormal(maya_normal);
+//		CHECK_MSTATUS(status);
+//		normals.push_back({ (float)maya_normal.x, (float)maya_normal.y, (float)maya_normal.z });	
+//	}
+//	return status;
+//}
 
 void maya_export_tools::commit_surfaces(xr_surface_vec& surfaces)
 {
@@ -697,8 +697,8 @@ xr_object* maya_export_tools::create_object(MObjectArray& mesh_objs)
 		if (!(status = extract_vertex_normals(mesh_fn, mesh->vnorm())))
 			goto fail;
 
-		if (!(status = extract_face_normals(mesh_fn, mesh->fnorm())))
-			goto fail;
+		//if (!(status = extract_face_normals(mesh_fn, mesh->fnorm())))
+		//	goto fail;
 	}
 
 	commit_surfaces(object->surfaces());
@@ -757,8 +757,8 @@ xr_object* maya_export_tools::create_skl_object(MObject& mesh_obj, MObject& skin
 	if (!(status = extract_vertex_normals(mesh_fn, mesh->vnorm())))
 		goto fail;
 
-	if (!(status = extract_face_normals(mesh_fn, mesh->fnorm())))
-		goto fail;
+	//if (!(status = extract_face_normals(mesh_fn, mesh->fnorm())))
+	//	goto fail;
 
 	object->partitions().push_back(new xr_partition(object->bones()));
 

@@ -186,8 +186,8 @@ public:
 	fvector3_vec&					vnorm();
 	const fvector3_vec&				vnorm() const;
 
-	fvector3_vec&					fnorm();
-	const fvector3_vec&				fnorm() const;
+	//fvector3_vec&					fnorm();
+	//const fvector3_vec&				fnorm() const;
 
 	void				calculate_bbox();
 
@@ -206,7 +206,7 @@ protected:
 	xr_vmap_vec					m_vmaps;	// EMESH_CHUNK_VMAPS
 
 	fvector3_vec				m_vertex_normals;	
-	fvector3_vec				m_face_normals;
+	//fvector3_vec				m_face_normals;
 };
 
 TYPEDEF_STD_VECTOR_PTR(xr_mesh)
@@ -261,8 +261,8 @@ inline const xr_vmap_vec& xr_mesh::vmaps() const { return m_vmaps; }
 
 inline fvector3_vec&			xr_mesh::vnorm() { return m_vertex_normals; }
 inline const fvector3_vec&		xr_mesh::vnorm() const { return m_vertex_normals; }
-inline fvector3_vec&			xr_mesh::fnorm() { return m_face_normals; }
-inline const fvector3_vec&		xr_mesh::fnorm() const { return m_face_normals; }
+//inline fvector3_vec&			xr_mesh::fnorm() { return m_face_normals; }
+//inline const fvector3_vec&	xr_mesh::fnorm() const { return m_face_normals; }
 } // end of namespace xray_re
 
 #endif
