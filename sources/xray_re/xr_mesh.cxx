@@ -355,6 +355,20 @@ void xr_mesh::save(xr_writer& w) const
 		w.close_chunk();
 	}
 
+	if (!m_vertex_normals.empty()) 
+	{
+		w.open_chunk(EMESH_CHUNK_VNORMALS);
+		w.w_seq(m_vertex_normals);
+		w.close_chunk();
+	}
+
+	if (!m_face_normals.empty())
+	{
+		w.open_chunk(EMESH_CHUNK_FNORMALS);
+		w.w_seq(m_face_normals);
+		w.close_chunk();
+	}
+
 	w.open_chunk(EMESH_CHUNK_VMREFS);
 	w.w_size_u32(m_vmrefs.size());
 	w.w_seq(m_vmrefs, write_vmref());

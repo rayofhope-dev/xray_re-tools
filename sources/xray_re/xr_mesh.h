@@ -119,6 +119,7 @@ struct xr_surfmap {
 };
 
 TYPEDEF_STD_VECTOR_PTR(xr_surfmap)
+TYPEDEF_STD_VECTOR(fvector3)
 
 struct lw_options {
 	uint32_t	unk1;
@@ -163,40 +164,49 @@ public:
 	void		load(xr_reader& r, xr_object& object);
 	void		save(xr_writer& w) const;
 
-	std::string&			name();
-	const std::string&		name() const;
-	uint8_t				flags() const;
-	uint8_t&			flags();
-	fbox&				bbox();
-	const fbox&			bbox() const;
-	std::vector<fvector3>&		points();
+	std::string&					name();
+	const std::string&				name() const;
+	uint8_t							flags() const;
+	uint8_t&						flags();
+	fbox&							bbox();
+	const fbox&						bbox() const;
+	std::vector<fvector3>&			points();
 	const std::vector<fvector3>&	points() const;
-	lw_face_vec&			faces();
-	const lw_face_vec&		faces() const;
-	std::vector<uint32_t>&		sgroups();
+	lw_face_vec&					faces();
+	const lw_face_vec&				faces() const;
+	std::vector<uint32_t>&			sgroups();
 	const std::vector<uint32_t>&	sgroups() const;
-	lw_vmref_vec&			vmrefs();
-	const lw_vmref_vec&		vmrefs() const;
-	xr_surfmap_vec&			surfmaps();
-	const xr_surfmap_vec&		surfmaps() const;
-	xr_vmap_vec&			vmaps();
-	const xr_vmap_vec&		vmaps() const;
+	lw_vmref_vec&					vmrefs();
+	const lw_vmref_vec&				vmrefs() const;
+	xr_surfmap_vec&					surfmaps();
+	const xr_surfmap_vec&			surfmaps() const;
+	xr_vmap_vec&					vmaps();
+	const xr_vmap_vec&				vmaps() const;
+
+	fvector3_vec&					vnorm();
+	const fvector3_vec&				vnorm() const;
+
+	fvector3_vec&					fnorm();
+	const fvector3_vec&				fnorm() const;
 
 	void				calculate_bbox();
 
 protected:
-	std::string		m_name;		// EMESH_CHUNK_MESHNAME
-	uint8_t			m_flags;	// EMESH_CHUNK_FLAGS
-	lw_options		m_options;	// EMESH_CHUNK_OPTIONS
-	fbox			m_bbox;		// EMESH_CHUNK_BBOX
-	std::vector<fvector3>	m_points;	// EMESH_CHUNK_VERTS
-	std::vector<uint8_t>	m_adj_counts;
-	std::vector<uint32_t>	m_adj_refs;
-	lw_face_vec		m_faces;	// EMESH_CHUNK_FACES
-	std::vector<uint32_t>	m_sgroups;	// EMESH_CHUNK_SG
-	lw_vmref_vec		m_vmrefs;	// EMESH_CHUNK_VMREFS
-	xr_surfmap_vec		m_surfmaps;	// EMESH_CHUNK_SFACE
-	xr_vmap_vec		m_vmaps;	// EMESH_CHUNK_VMAPS
+	std::string					m_name;		// EMESH_CHUNK_MESHNAME
+	uint8_t						m_flags;	// EMESH_CHUNK_FLAGS
+	lw_options					m_options;	// EMESH_CHUNK_OPTIONS
+	fbox						m_bbox;		// EMESH_CHUNK_BBOX
+	std::vector<fvector3>		m_points;	// EMESH_CHUNK_VERTS
+	std::vector<uint8_t>		m_adj_counts;
+	std::vector<uint32_t>		m_adj_refs;
+	lw_face_vec					m_faces;	// EMESH_CHUNK_FACES
+	std::vector<uint32_t>		m_sgroups;	// EMESH_CHUNK_SG
+	lw_vmref_vec				m_vmrefs;	// EMESH_CHUNK_VMREFS
+	xr_surfmap_vec				m_surfmaps;	// EMESH_CHUNK_SFACE
+	xr_vmap_vec					m_vmaps;	// EMESH_CHUNK_VMAPS
+
+	fvector3_vec				m_vertex_normals;	
+	fvector3_vec				m_face_normals;
 };
 
 TYPEDEF_STD_VECTOR_PTR(xr_mesh)
@@ -248,6 +258,11 @@ inline const xr_surfmap_vec& xr_mesh::surfmaps() const { return m_surfmaps; }
 inline xr_vmap_vec& xr_mesh::vmaps() { return m_vmaps; }
 inline const xr_vmap_vec& xr_mesh::vmaps() const { return m_vmaps; }
 
+
+inline fvector3_vec&			xr_mesh::vnorm() { return m_vertex_normals; }
+inline const fvector3_vec&		xr_mesh::vnorm() const { return m_vertex_normals; }
+inline fvector3_vec&			xr_mesh::fnorm() { return m_face_normals; }
+inline const fvector3_vec&		xr_mesh::fnorm() const { return m_face_normals; }
 } // end of namespace xray_re
 
 #endif
