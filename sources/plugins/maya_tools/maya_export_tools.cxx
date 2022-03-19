@@ -1291,7 +1291,7 @@ MStatus maya_export_tools::export_anm(const char *path, bool selection_only)
 
 void maya_export_tools::set_default_options(void)
 {
-	m_target_sdk = xray_re::SDK_VER_0_4;
+	m_target_sdk = xray_re::SDK_VER_DEFAULT;
 	m_compressed = false;
 }
 
@@ -1315,7 +1315,7 @@ MStatus maya_export_tools::parse_options(const MString& options)
 		if (key_value[0] == "sdk_ver")
 		{
 			xray_re::sdk_version ver = xray_re::sdk_version_from_string(key_value[1].asChar());
-			m_target_sdk = (ver == xray_re::SDK_VER_UNKNOWN ? xray_re::SDK_VER_0_4 : ver);
+			m_target_sdk = (ver == xray_re::SDK_VER_UNKNOWN ? xray_re::SDK_VER_DEFAULT : ver);
 		}
 		else if (key_value[0] == "compressed")
 		{

@@ -15,7 +15,8 @@ enum sdk_version
 	SDK_VER_0_5,
 	SDK_VER_0_6,
 	SDK_VER_0_7,
-	SDK_VER_UNKNOWN = -1
+	SDK_VER_UNKNOWN = -1,
+	SDK_VER_DEFAULT = SDK_VER_0_7
 };
 
 inline sdk_version sdk_version_from_string(const std::string& str)
