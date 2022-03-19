@@ -94,12 +94,12 @@
     <LibraryPath>$(SolutionDir)..\sources\3rd party\Maya_2019_2\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)..\sources\3rd party\Maya_2019_2\include\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)..\sources\3rd party\Maya_2019_2\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)..\sources\3rd party\Maya\include\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\sources\3rd party\Maya\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)..\sources\3rd party\Maya_2019_2\include\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)..\sources\3rd party\Maya_2019_2\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)..\sources\3rd party\Maya\include\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\sources\3rd party\Maya\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LibraryPath>$(SolutionDir)..\sources\3rd party\Maya_2019_2\lib;$(LibraryPath)</LibraryPath>
