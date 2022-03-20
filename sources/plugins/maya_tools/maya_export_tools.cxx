@@ -917,8 +917,10 @@ MStatus maya_export_tools::export_skl(const char* path, bool selection_only)
 	set_default_options();
 
 	if (MTime::uiUnit() != MTime::kNTSCFrame)
+	{
 		msg("xray_re: motion export with non-NTSC frame frequency was not tested!");
 		MGlobal::displayWarning("xray_re: motion export with non-NTSC frame frequency was not tested!");
+	}
 
 	MObject skin_obj;
 	MStatus status = find_mesh_and_skin(0, &skin_obj, selection_only);
