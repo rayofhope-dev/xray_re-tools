@@ -18,6 +18,8 @@ global proc int xray_re_object_translator_options(string $parent, string $action
 
 		checkBox -label "Compressed" "compressed";
 
+		checkBox -label "Custom normals (export vnormals)" "vnormals";
+
 		string $params[];
 		tokenize($options, ";", $params);
 		for($i = 0; $i < size($params); $i++)
@@ -25,7 +27,7 @@ global proc int xray_re_object_translator_options(string $parent, string $action
 			string $kv[];
 			tokenize($params[$i], "=", $kv);
 
-			if(size($kv) < 2)
+			if(size($kv) < 3)
 				continue;
 			
 			if($kv[0] == "sdk_ver")
@@ -38,6 +40,12 @@ global proc int xray_re_object_translator_options(string $parent, string $action
 					checkBox -edit -value true "compressed";
 				else
 					checkBox -edit -value false "compressed";
+					
+			if($kv[0] == "vnormals")
+				if($kv[1] == "true")
+					checkBox -edit -value true "vnormals";
+				else
+					checkBox -edit -value false "vnormals";				
 		}
 	}
 	else if($action == "query")
@@ -53,6 +61,11 @@ global proc int xray_re_object_translator_options(string $parent, string $action
 			$options += "compressed=true;";
 		else
 			$options += "compressed=false;";
+
+		if(`checkBox -q -value "vnormals"`)
+			$options += "vnormals=true;";
+		else
+			$options += "vnormals=false;";
 
 		eval($callback + " \"" + $options + "\"");
 	}
