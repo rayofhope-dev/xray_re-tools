@@ -61,6 +61,7 @@ private:
 
 	xray_re::sdk_version m_target_sdk;
 	bool m_compressed;
+	bool m_vnormals;
 };
 
 #endif

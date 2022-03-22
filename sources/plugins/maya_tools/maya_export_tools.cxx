@@ -180,7 +180,7 @@ static MStatus extract_points(MFnMesh& mesh_fn, std::vector<fvector3>& points, f
 	return status;
 }
 
-static MStatus extract_faces(MFnMesh& mesh_fn, lw_face_vec& faces)
+static MStatus extract_faces(MFnMesh& mesh_fn, lw_face_vec& faces, fvector3_vec* normals)
 {
 	MStatus status;
 
@@ -214,6 +214,26 @@ static MStatus extract_faces(MFnMesh& mesh_fn, lw_face_vec& faces)
 		}
 		lw_face face(verts[2], verts[1], verts[0]);
 		faces.push_back(face);
+
+		if (normals)
+		{
+			MFloatVectorArray NormalArray;
+			mesh_fn.getFaceVertexNormals(i, NormalArray);
+			if (NormalArray.length() != 3) {
+				msg("can't export mesh %s with face with more than 3 normals",
+					mesh_fn.name().asChar());
+				return MS::kInvalidParameter;
+			}
+
+			for (int a = 0; a < 3; a++)
+			{
+				auto& Normal = NormalArray[2 - a]; //invert order
+
+				normals->push_back({ (float)Normal.x, (float)Normal.y, -(float)Normal.z, });
+			}
+		}
+
+
 	}
 	return status;
 }
@@ -612,41 +632,6 @@ static MStatus extract_smoothing_groups_cs(MFnMesh& mesh_fn, std::vector<uint32_
 	return status;
 }
 
-
-static MStatus extract_vertex_normals(MFnMesh& mesh_fn, fvector3_vec& normals)
-{
-	MStatus status = MS::kSuccess;
-
-	//unsigned num_faces = unsigned(mesh_fn.numPolygons() & INT_MAX);
-	//temp_face* temp_faces = new temp_face[num_faces];
-	for (MItMeshPolygon it(mesh_fn.object()); !it.isDone(); it.next()) 
-	{
-		MVectorArray maya_normals;
-		status = it.getNormals(maya_normals);
-		CHECK_MSTATUS(status);
-
-		for (unsigned int inx =0; inx != maya_normals.length(); ++inx)
-		{
-			normals.push_back({ (float)maya_normals[inx].x, (float)maya_normals[inx].y, (float)maya_normals[inx].z });
-		}
-	}
-	return status;
-}
-
-//static MStatus extract_face_normals(MFnMesh& mesh_fn, fvector3_vec& normals)
-//{
-//	MStatus status = MS::kSuccess;
-//
-//	for (MItMeshPolygon it(mesh_fn.object()); !it.isDone(); it.next())
-//	{
-//		MVector maya_normal;
-//		status = it.getNormal(maya_normal);
-//		CHECK_MSTATUS(status);
-//		normals.push_back({ (float)maya_normal.x, (float)maya_normal.y, (float)maya_normal.z });	
-//	}
-//	return status;
-//}
-
 void maya_export_tools::commit_surfaces(xr_surface_vec& surfaces)
 {
 	surfaces.reserve(m_shared_surfaces.size());
@@ -669,12 +654,14 @@ xr_object* maya_export_tools::create_object(MObjectArray& mesh_objs)
 
 		xr_mesh* mesh = new xr_mesh;
 		object->meshes().push_back(mesh);
+		auto pVNormals = m_vnormals ? &mesh->vnorm() : nullptr;
+
 		mesh->name() = mesh_fn.name().asChar();
 
 		if (!(status = extract_points(mesh_fn, mesh->points(), mesh->bbox())))
 			goto fail;
 
-		if (!(status = extract_faces(mesh_fn, mesh->faces())))
+		if (!(status = extract_faces(mesh_fn, mesh->faces(), pVNormals)))
 			goto fail;
 
 		if (!(status = extract_uvs(mesh_fn, mesh->faces(), mesh->vmrefs(), mesh->vmaps())))
@@ -694,11 +681,6 @@ xr_object* maya_export_tools::create_object(MObjectArray& mesh_objs)
 				goto fail;
 		}
 
-		if (!(status = extract_vertex_normals(mesh_fn, mesh->vnorm())))
-			goto fail;
-
-		//if (!(status = extract_face_normals(mesh_fn, mesh->fnorm())))
-		//	goto fail;
 	}
 
 	commit_surfaces(object->surfaces());
@@ -720,6 +702,7 @@ xr_object* maya_export_tools::create_skl_object(MObject& mesh_obj, MObject& skin
 	MFnMesh mesh_fn(mesh_obj);
 
 	xr_mesh* mesh = new xr_mesh;
+	auto pVNormals = m_vnormals ? &mesh->vnorm() : nullptr;
 	// attach now to allow auto-deletion in case of error
 	object->meshes().push_back(mesh);
 	mesh->name() = mesh_fn.name().asChar();
@@ -731,7 +714,7 @@ xr_object* maya_export_tools::create_skl_object(MObject& mesh_obj, MObject& skin
 	if (!(status = extract_points(mesh_fn, mesh->points(), mesh->bbox())))
 		goto fail;
 
-	if (!(status = extract_faces(mesh_fn, mesh->faces())))
+	if (!(status = extract_faces(mesh_fn, mesh->faces(), pVNormals)))
 		goto fail;
 
 	if (!(status = extract_uvs(mesh_fn, mesh->faces(), mesh->vmrefs(), mesh->vmaps())))
@@ -753,12 +736,6 @@ xr_object* maya_export_tools::create_skl_object(MObject& mesh_obj, MObject& skin
 		if (!(status = extract_smoothing_groups_cs(mesh_fn, mesh->sgroups())))
 			goto fail;
 	}
-
-	if (!(status = extract_vertex_normals(mesh_fn, mesh->vnorm())))
-		goto fail;
-
-	//if (!(status = extract_face_normals(mesh_fn, mesh->fnorm())))
-	//	goto fail;
 
 	object->partitions().push_back(new xr_partition(object->bones()));
 
@@ -1308,6 +1285,7 @@ void maya_export_tools::set_default_options(void)
 {
 	m_target_sdk = xray_re::SDK_VER_DEFAULT;
 	m_compressed = false;
+	m_vnormals = false;
 }
 
 MStatus maya_export_tools::parse_options(const MString& options)
@@ -1336,6 +1314,8 @@ MStatus maya_export_tools::parse_options(const MString& options)
 		{
 			m_compressed = (key_value[1] == "true");
 		}
+		else if (key_value[0] == "vnormals")
+			m_vnormals = (key_value[1] == "true");
 	}
 
 	return MS::kSuccess;
