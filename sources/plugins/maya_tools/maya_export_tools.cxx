@@ -918,7 +918,7 @@ MStatus maya_export_tools::export_skl(const char* path, bool selection_only)
 
 	if (MTime::uiUnit() != MTime::kNTSCFrame)
 	{
-		msg("xray_re: motion export with non-NTSC frame frequency was not tested!");
+		msg("xray_re: motion export with non-NTSC(30 fps) frame frequency was not tested!");
 		MGlobal::displayWarning("xray_re: motion export with non-NTSC frame frequency was not tested!");
 	}
 
@@ -952,14 +952,19 @@ MStatus maya_export_tools::export_skl(const char* path, bool selection_only)
 
 	MTime saved_time(MAnimControl::currentTime());
 
-	int32_t frame_start = int32_t(MAnimControl::minTime().as(MTime::kNTSCFrame));
-	int32_t frame_end = int32_t(MAnimControl::maxTime().as(MTime::kNTSCFrame));
+	int32_t frame_start = int32_t(MAnimControl::minTime().as(MTime::uiUnit()));
+	int32_t frame_end = int32_t(MAnimControl::maxTime().as(MTime::uiUnit()));
 	msg("xray_re: animation range=%d-%d", frame_start, frame_end);
 	MGlobal::displayInfo(MString("xray_re: animation range=") + frame_start + "-" + frame_end);
 
-	for (int32_t frame = frame_start; frame != frame_end; ++frame) {
-		MGlobal::viewFrame(MTime(double(frame), MTime::kNTSCFrame));
-		float time = frame/30.f;
+	MTime	tmNew;
+	tmNew.setUnit(MTime::uiUnit());
+
+	for (int32_t frame = frame_start; frame <= frame_end; ++frame) {
+		tmNew.setValue(frame);
+		MGlobal::viewFrame(tmNew);
+
+		float displacedTime = (float)tmNew.as(MTime::kSeconds);
 		for (unsigned i = num_joints; i != 0;) {
 			MFnIkJoint joint_fn(joints[--i]);
 			xr_envelope* const* envelopes = bmotions[i]->envelopes();
@@ -969,21 +974,24 @@ MStatus maya_export_tools::export_skl(const char* path, bool selection_only)
 
 			MVector t = mat.getTranslation(MSpace::kTransform, &status);
 			CHECK_MSTATUS(status);
-			envelopes[0]->insert_key(time, float(MDistance(t.x, MDistance::kCentimeters).asMeters()));
-			envelopes[1]->insert_key(time, float(MDistance(t.y, MDistance::kCentimeters).asMeters()));
-			envelopes[2]->insert_key(time, float(MDistance(-t.z, MDistance::kCentimeters).asMeters()));
+			envelopes[0]->insert_key(displacedTime, float(MDistance(t.x, MDistance::kCentimeters).asMeters()));
+			envelopes[1]->insert_key(displacedTime, float(MDistance(t.y, MDistance::kCentimeters).asMeters()));
+			envelopes[2]->insert_key(displacedTime, float(MDistance(-t.z, MDistance::kCentimeters).asMeters()));
 
 			MEulerRotation r = mat.eulerRotation();
 			r.reorderIt(MEulerRotation::kZXY);
-			envelopes[4]->insert_key(time, float(-r.x));
-			envelopes[3]->insert_key(time, float(-r.y));
-			envelopes[5]->insert_key(time, float(r.z));
+			envelopes[4]->insert_key(displacedTime, float(-r.x));
+			envelopes[3]->insert_key(displacedTime, float(-r.y));
+			envelopes[5]->insert_key(displacedTime, float(r.z));
 		}
 	}
 	xr_skl_motion* smotion = new xr_skl_motion;
 
-	smotion->name() = "unnamed";
-	smotion->fps() = 30.f;
+	char name[_MAX_FNAME];
+	_splitpath_s(path, NULL, 0, NULL, 0, name, sizeof(name), NULL, 0);
+
+	smotion->name() = name;
+	smotion->fps() = (float)(double(1) / MTime(1, MTime::uiUnit()).as(MTime::kSeconds));
 	smotion->set_frame_range(frame_start, frame_end);
 	smotion->bone_motions().swap(bmotions);
 	status = smotion->save_skl(path) ? MS::kSuccess : MS::kFailure;
@@ -1255,28 +1263,33 @@ MStatus maya_export_tools::export_anm(const char *path, bool selection_only)
 
 	MTime saved_time(MAnimControl::currentTime());
 
-	int32_t frame_start = int32_t(MAnimControl::minTime().as(MTime::kNTSCFrame));
-	int32_t frame_end = int32_t(MAnimControl::maxTime().as(MTime::kNTSCFrame));
+	int32_t frame_start = int32_t(MAnimControl::minTime().as(MTime::uiUnit()));
+	int32_t frame_end = int32_t(MAnimControl::maxTime().as(MTime::uiUnit()));
 	msg("xray_re: animation range=%d-%d", frame_start, frame_end);
 	MGlobal::displayInfo(MString("xray_re: animation range=") + frame_start + "-" + frame_end);
 
-	for (int32_t frame = frame_start; frame != frame_end; ++frame) {
-		MGlobal::viewFrame(MTime(double(frame), MTime::kNTSCFrame));
-		float time = frame/30.f;
+	MTime	tmNew;
+	tmNew.setUnit(MTime::uiUnit());
+
+	for (int32_t frame = frame_start; frame <= frame_end; ++frame) {
+		tmNew.setValue(frame);
+		MGlobal::viewFrame(tmNew);
+
+		float displacedTime = (float)tmNew.as(MTime::kSeconds);
 
 		MVector t = transform.getTranslation(MSpace::kTransform, &status);
 		CHECK_MSTATUS(status);
-		envelopes[0]->insert_key(time, float(MDistance(t.x, MDistance::kCentimeters).asMeters()));
-		envelopes[1]->insert_key(time, float(MDistance(t.y, MDistance::kCentimeters).asMeters()));
-		envelopes[2]->insert_key(time, float(MDistance(-t.z, MDistance::kCentimeters).asMeters()));
+		envelopes[0]->insert_key(displacedTime, float(MDistance(t.x, MDistance::kCentimeters).asMeters()));
+		envelopes[1]->insert_key(displacedTime, float(MDistance(t.y, MDistance::kCentimeters).asMeters()));
+		envelopes[2]->insert_key(displacedTime, float(MDistance(-t.z, MDistance::kCentimeters).asMeters()));
 
 		MEulerRotation r;
 		status = transform.getRotation(r);
 		CHECK_MSTATUS(status);
 		r.reorderIt(MEulerRotation::kZXY);
-		envelopes[4]->insert_key(time, float(-r.x));
-		envelopes[3]->insert_key(time, float(-r.y));
-		envelopes[5]->insert_key(time, float(r.z));
+		envelopes[4]->insert_key(displacedTime, float(-r.x));
+		envelopes[3]->insert_key(displacedTime, float(-r.y));
+		envelopes[5]->insert_key(displacedTime, float(r.z));
 	}
 
 	MAnimControl::setCurrentTime(saved_time);
@@ -1285,7 +1298,7 @@ MStatus maya_export_tools::export_anm(const char *path, bool selection_only)
 	_splitpath_s(path, NULL, 0, NULL, 0, name, sizeof(name), NULL, 0);
 
 	anm.name() = name;
-	anm.fps() = 30.f;
+	anm.fps() = (float)(double(1) / MTime(1, MTime::uiUnit()).as(MTime::kSeconds));
 	anm.set_frame_range(frame_start, frame_end);
 
 	return anm.save_anm(path) ? MS::kSuccess : MS::kFailure;
