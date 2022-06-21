@@ -40,6 +40,16 @@
 
 using namespace xray_re;
 
+std::string getRealName(MFnDependencyNode& n)
+{
+	std::string name = n.absoluteName().asChar();
+	const auto delimPos = name.find_last_of(':');
+	if (delimPos == std::string::npos)
+		return name;
+
+	return name.substr(delimPos + 1, std::string::npos);
+}
+
 maya_export_tools::maya_export_tools(const MString& options)
 {
 	set_default_options();
@@ -80,19 +90,19 @@ static MStatus extract_bones(MFnSkinCluster& skin_fn, xr_bone_vec& bones)
 
 		xr_bone* bone = new xr_bone;
 		bones[i] = bone;
-		const char* name = joint_fn.name().asChar();
+		auto name = getRealName(joint_fn);
 		bone->vmap_name() = bone->name() = name;
 
 		unsigned num_parents = joint_fn.parentCount();
 		if (num_parents > 1) {
 			msg("xray_re: can't handle multi-parented joint %s", name);
-			MGlobal::displayError(MString("xray_re: can't handle multi-parented joint ") + name);
+			MGlobal::displayError(MString("xray_re: can't handle multi-parented joint ") + name.c_str());
 			return MS::kInvalidParameter;
 		} else if (num_parents == 1) {
 			MObject parent_obj = joint_fn.parent(0);
 			if (parent_obj.hasFn(MFn::kJoint) &&
 					joint_fn.setObject(parent_obj)) {
-				bone->parent_name() = joint_fn.name().asChar();
+				bone->parent_name() = getRealName(joint_fn);
 			}
 		}
 	}
@@ -332,10 +342,10 @@ static MStatus extract_weights(MFnMesh& mesh_fn, MFnSkinCluster& skin_fn,
 		MFnIkJoint joint_fn(joints[joint_idx], &status);
 		CHECK_MSTATUS(status);
 
-		msg("xray_re: joint=%s", joint_fn.name().asChar());
+		msg("xray_re: joint=%s", getRealName(joint_fn).c_str());
 		MGlobal::displayInfo(MString("xray_re: joint=") + joint_fn.name().asChar());
 
-		xr_weight_vmap* weight_vmap = new xr_weight_vmap(joint_fn.name().asChar());
+		xr_weight_vmap* weight_vmap = new xr_weight_vmap(getRealName(joint_fn));
 		weight_vmap->reserve(weights.length());
 		uint32_t vmap_idx = uint32_t(vmaps.size() & UINT32_MAX);
 		vmaps.push_back(weight_vmap);
@@ -486,10 +496,10 @@ MStatus maya_export_tools::extract_surfaces(MFnMesh& mesh_fn, xr_surfmap_vec& su
 		if (smap == 0) {
 			MFnSet set_fn(shading_groups[faces[i]], &status);
 			CHECK_MSTATUS(status);
-			const char* surf_name = set_fn.name().asChar();
+			auto surf_name = getRealName(set_fn);
 			xr_surface*& surface = m_shared_surfaces[surf_name];
 			if (surface == 0) {
-				smap = new xr_surfmap(create_surface(surf_name, set_fn));
+				smap = new xr_surfmap(create_surface(surf_name.c_str(), set_fn));
 				surface = smap->surface;
 			} else {
 				smap = new xr_surfmap(surface);
@@ -656,7 +666,7 @@ xr_object* maya_export_tools::create_object(MObjectArray& mesh_objs)
 		object->meshes().push_back(mesh);
 		auto pVNormals = m_vnormals ? &mesh->vnorm() : nullptr;
 
-		mesh->name() = mesh_fn.name().asChar();
+		mesh->name() = getRealName(mesh_fn);
 
 		if (!(status = extract_points(mesh_fn, mesh->points(), mesh->bbox())))
 			goto fail;
@@ -705,7 +715,7 @@ xr_object* maya_export_tools::create_skl_object(MObject& mesh_obj, MObject& skin
 	auto pVNormals = m_vnormals ? &mesh->vnorm() : nullptr;
 	// attach now to allow auto-deletion in case of error
 	object->meshes().push_back(mesh);
-	mesh->name() = mesh_fn.name().asChar();
+	mesh->name() = getRealName(mesh_fn);
 
 	MFnSkinCluster skin_fn(skin_obj);
 	if (!(status = extract_bones(skin_fn, object->bones())))
@@ -922,7 +932,7 @@ MStatus maya_export_tools::export_skl(const char* path, bool selection_only)
 				joints[i].partialPathName().asChar());
 			return status;
 		}
-		xr_bone_motion* bmotion = new xr_bone_motion(joint_fn.name().asChar());
+		xr_bone_motion* bmotion = new xr_bone_motion(getRealName(joint_fn).c_str());
 		bmotion->create_envelopes();
 		bmotions[i] = bmotion;
 	}
