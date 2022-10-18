@@ -153,7 +153,7 @@ struct lw_vmref_entry {
 	uint32_t	offset;
 };
 
-typedef _svector<lw_vmref_entry, 5> lw_vmref;
+typedef _svector<lw_vmref_entry, 6> lw_vmref;
 
 TYPEDEF_STD_VECTOR(lw_vmref)
 
