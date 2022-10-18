@@ -68,8 +68,8 @@ static MStatus extract_bones(MFnSkinCluster& skin_fn, xr_bone_vec& bones)
 		MGlobal::displayError("xray_re: can't find any influence object");
 		return MS::kInvalidParameter;
 	} else if (num_joints > MAX_BONES) {
-		msg("xray_re: too many joints (%u of %u possible)", num_joints, MAX_BONES);
-		MGlobal::displayError(MString("xray_re: too many joints ") +
+		msg("xray_re: Warning! The number of bones is greater than the default maximum value (%u of %u possible)", num_joints, MAX_BONES);
+		MGlobal::displayError(MString("xray_re: Warning! The number of bones is greater than the default maximum value") +
 			"(" + num_joints + " of " + MAX_BONES + " possible)");
 	}
 
